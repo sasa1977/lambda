@@ -3,7 +3,7 @@ Lambda
 Syntactic sugar for defining lambda functions with explicit scope.
 
 # Motivation
-Sometimes we need to send a simple fun as an argument of another fun, and *fn(...) -> end* feels like adding a bit noise. Elixir offers a &... notation to help with this, but this doesn't always work as expected:
+Sometimes we need to send a simple fun as an argument of another fun, and *fn(...) -> end* feels like adding a bit of a noise. Elixir offers an &... notation to help with this, but it doesn't always work as expected:
 
     iex(1)> Enum.map(1..2, {&1, &1*&1})
     [{1,#Function<erl_eval.6.82930912>},{2,#Function<erl_eval.6.82930912>}]
@@ -11,7 +11,7 @@ Sometimes we need to send a simple fun as an argument of another fun, and *fn(..
 The problem is that an &... operator turns the first parent expression into a function. In this case the second element of a tuple is turned into a fun which wraps the multiplication.
 
 # Lambda
-The Lambda module provides a %f macro which works a bit differently, making the scope which will be turned into a fun explicit:
+The Lambda module provides the %f macro which works a bit differently, making the scope which will be turned into a fun explicit:
 
     Enum.map(1..2, %f({&1, &1*&1}))   # [{1,1},{2,4}]
     
@@ -32,7 +32,7 @@ To use it, just add dependency to your mix file, and import Lambda in your modul
     ...
     %f(...)
 
-The syntax relies on [Elixir sigils](http://elixir-lang.org/getting_started/6.html) meaning there is one caveat:
+The syntax relies on [Elixir sigils](http://elixir-lang.org/getting_started/6.html) which means there is one caveat:
 
     %f(&1 * (&2 * 3))   # compiler error, the first right parenthesis terminates the macro
 
