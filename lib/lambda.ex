@@ -1,18 +1,19 @@
-@moduledoc """
-Syntactic sugar for defining lambda functions with explicit scope.
-
-Example:
-  defmodule MyModule do
-    import Lambda
-    
-    def test do
-      Enum.map(1..2, %f({&1, &1*&1}))
-    end
-  end
-  
-Anything inside %f(...) is turned into an anonymous function
-"""
 defmodule Lambda do
+  @moduledoc """
+  Syntactic sugar for defining lambda functions with explicit scope.
+
+  Example:
+    defmodule MyModule do
+      import Lambda
+
+      def test do
+        Enum.map(1..2, %f({&1, &1*&1}))
+      end
+    end
+
+  Anything inside %f(...) is turned into an anonymous function
+  """
+  
   defrecord ParseResponse, code: nil, arity: 0 do
     def new_list, do: new(code: [])
 
