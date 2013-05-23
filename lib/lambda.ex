@@ -35,7 +35,7 @@ defmodule Lambda do
   
   defp def_fun(parse_result) do
     quote do
-      fn(unquote_splicing(args(parse_result.arity))) ->
+      fn unquote_splicing(args(parse_result.arity)) ->
         unquote(parse_result.code)
       end
     end
