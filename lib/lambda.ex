@@ -26,8 +26,8 @@ defmodule Lambda do
     def to_tuple(this), do: this.update_code(list_to_tuple(&1))
   end
   
-  defmacro __f__({:<<>>, line, [string]}, _) do
-    case Code.string_to_ast!("{#{string}}", line) do
+  defmacro sigil_f({:<<>>, line, [string]}, _) do
+    case Code.string_to_quoted!("{#{string}}", line) do
       {:"{}", _, [code]} -> def_fun(parse_code(code))
       {arity, code} -> def_fun(parse_code(code).arity(arity))
     end
@@ -35,7 +35,7 @@ defmodule Lambda do
   
   defp def_fun(parse_result) do
     quote do
-      fn unquote_splicing(args(parse_result.arity)) ->
+      fn(unquote_splicing(args(parse_result.arity))) ->
         unquote(parse_result.code)
       end
     end
