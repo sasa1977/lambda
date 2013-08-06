@@ -4,30 +4,39 @@ defmodule Lambda do
   See README.md for examples.
   """
   
-  defrecord ParseResponse, code: nil, arity: 0 do
-    def new_list, do: new(code: [])
+  defrecordp :parser_state, [ast: nil, arity: 0]
 
-    def push(response, this) do
-      this.
-        update_arity(max(response.arity, &1)).
-        update_code([response.code | &1])
-    end
-    
-    def to_tuple(this), do: this.update_code(list_to_tuple(&1))
+  defp push_ast(
+    parser_state(ast: current_ast, arity: current_arity),
+    parser_state(ast: new_ast, arity: new_arity)
+  ) do
+    parser_state(
+      ast: [new_ast | current_ast],
+      arity: max(current_arity, new_arity)
+    )
   end
 
-  defmacro ld(arity, code) do
-    def_fun(parse_code(code).arity(arity))
+  defp state_to_tuple(parser_state(ast: current_ast) = state) do
+    parser_state(state, ast: list_to_tuple(current_ast))
   end
 
-  defmacro ld(code) do
-    def_fun(parse_code(code))
+  defmacro ld(arity, ast) do
+    ast
+    |> parse_ast
+    |> parser_state(arity: arity)
+    |> def_fun
   end
 
-  defmacro ldp(arg, code) do
-    code = parse_code(code)
-    if code.arity != 1, do: raise(CompileError, message: "arity is not 1")
-    fun = def_fun(code)
+  defmacro ld(ast) do
+    ast
+    |> parse_ast
+    |> def_fun
+  end
+
+  defmacro ldp(arg, ast) do
+    ast = parse_ast(ast)
+    if parser_state(ast, :arity) != 1, do: raise(CompileError, message: "arity is not 1")
+    fun = def_fun(ast)
     quote do
       unquote(fun).(unquote(arg))
     end
@@ -39,10 +48,10 @@ defmodule Lambda do
     end
   end
   
-  defp def_fun(parse_result) do
+  defp def_fun(parser_state(ast: ast, arity: arity)) do
     quote do
-      fn(unquote_splicing(args(parse_result.arity))) ->
-        unquote(parse_result.code)
+      fn(unquote_splicing(args(arity))) ->
+        unquote(ast)
       end
     end
   end
@@ -53,32 +62,37 @@ defmodule Lambda do
     end) |> tl
   end
 
-  defp parse_code({:ld, _, _} = other), do: ParseResponse.new(code: other)
+  defp parse_ast({:ld, _, _} = other), do: parser_state(ast: other)
   
-  defp parse_code({arg, _, _} = tuple) when is_atom(arg) do
+  defp parse_ast({arg, _, _} = tuple) when is_atom(arg) do
     case to_binary(arg) do
       "_" <> index -> 
         case Regex.match?(%r/\A\d+\z/, index) do
           true -> 
-            ParseResponse.new(
-              code: {:"_#{index}", [], nil},
+            parser_state(
+              ast: {:"_#{index}", [], nil},
               arity: binary_to_integer(index)
             )
-          false -> parse_code(tuple_to_list(tuple)).to_tuple
+          false -> parse_tuple(tuple)
         end
-      _ -> parse_code(tuple_to_list(tuple)).to_tuple
+      _ -> parse_tuple(tuple)
     end
   end
   
-  defp parse_code(tuple) when is_tuple(tuple) do
-    parse_code(tuple_to_list(tuple)).to_tuple
-  end
+  defp parse_ast(tuple) when is_tuple(tuple), do: parse_tuple(tuple)
   
-  defp parse_code(list) when is_list(list) do
-    List.foldr(list, ParseResponse.new_list, fn(element, parse_response) ->
-      parse_response.push(parse_code(element))
+  defp parse_ast(list) when is_list(list) do
+    List.foldr(list, parser_state(ast: []), fn(element, parser_state) ->
+      push_ast(parser_state, parse_ast(element))
     end)
   end
-  
-  defp parse_code(other), do: ParseResponse.new(code: other)
+
+  defp parse_ast(other), do: parser_state(ast: other)
+
+  defp parse_tuple(tuple) do
+    tuple
+    |> tuple_to_list
+    |> parse_ast
+    |> state_to_tuple
+  end
 end

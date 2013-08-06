@@ -5,29 +5,38 @@ Syntactic sugar for defining lambda functions with explicit scope. Supports shor
 ```elixir
   import Lambda
 
-  ld(1 + 2)       # zero arity function
-  ld(_1)          # identity function
-  ld(_2 * 2)      # gueses arity from the highest index
-  ld(4, _2 + 3)   # explicitly set arity to 4
+  ld(_1 + _2 + _3)    # same as &(&1 + &2 + &3)
+  ld(1 + 2)           # zero arity function
+  ld(_1)              # identity function
+  ld(_2 * 2)          # guesses arity from the highest index, not all arguments have to be used
+  ld(4, _2 + 3)       # explicitly set arity to 4, not all arguments have to be used 
 ```
 
 In addition, two macros are included to compensate for pipeline shortcomings.
-The macro ldp can be used in pipeline chain. This is especially useful if we need to pipe to an argument which is not the first one:
+The macro ldp can pipeline to any argument in the function call:
 
 ```elixir
-  [1, 2, 3]
-  |> ldp(:lists.nth(3, _1))
-  |> ldp(_1 + 2)
-  |> ldp(_1 * 2)
+  :gb_trees.empty
+  |> ldp(:gb_trees.enter(:a, 1, _1))
+  |> ldp(:gb_trees.enter(:b, 2, _1))
 ```
 
-The macro ldl is specifically designed to provide pipelining support for records. It assumes its argument is a function call, and appends the left side of the pipeline as the last argument of the call:
+When pipelining to the last argument, this can be shortened with the ldl macro:
+
+```elixir
+  :gb_trees.empty
+  |> ldl(:gb_trees.enter(:a, 1))
+  |> ldl(:gb_trees.enter(:b, 2))
+```
+
+ldl is specifically useful with records pipelining:
 
 ```elixir
   defrecord TestRecord, [a: 0, b: 0] do
     import Lambda
 
     def create do
+      # pipelining inside the record module
       new
       |> ldl(a(1))
       |> ldl(b(2))
@@ -35,7 +44,7 @@ The macro ldl is specifically designed to provide pipelining support for records
     end
   end
 
-  # ldl can also be used for calls to other modules:
+  # pipelining outside the record module
   TestRecord.new
   |> ldl(TestRecord.a(1))
   |> ldl(TestRecord.b(2))
