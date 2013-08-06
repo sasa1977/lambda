@@ -27,10 +27,11 @@ defmodule LambdaTest do
 
   test "pipe tests" do
     assert (
-      1
+      [1, 2, 3]
+      |> ldp(:lists.nth(3, _1))
       |> ldp(_1 + 2)
       |> ldp(_1 * 2)
-    ) == 6
+    ) == 10
   end
 
   test "record tests" do

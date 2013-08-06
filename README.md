@@ -12,11 +12,11 @@ Syntactic sugar for defining lambda functions with explicit scope. Supports shor
 ```
 
 In addition, two macros are included to compensate for pipeline shortcomings.
-
-The macro ldp can be used in pipeline chain:
+The macro ldp can be used in pipeline chain. This is especially useful if we need to pipe to an argument which is not the first one:
 
 ```elixir
-  1
+  [1, 2, 3]
+  |> ldp(:lists.nth(3, _1))
   |> ldp(_1 + 2)
   |> ldp(_1 * 2)
 ```
