@@ -65,7 +65,7 @@ defmodule Lambda do
   defp parse_ast({:ld, _, _} = other), do: parser_state(ast: other)
   
   defp parse_ast({arg, _, _} = tuple) when is_atom(arg) do
-    case to_binary(arg) do
+    case to_string(arg) do
       "_" <> index -> 
         case Regex.match?(%r/\A\d+\z/, index) do
           true -> 
